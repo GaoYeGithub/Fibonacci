@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Growing 3D Fibonacci Spiral</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Set up the scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Fibonacci spiral parameters
+        let turns = 0;
+        const growthRate = 0.1;
+        const maxTurns = 30;
+        let spiral;
+
+        function createFibonacciSpiral(turns) {
+            const curve = new THREE.CurvePath();
+            const goldenRatio = (1 + Math.sqrt(5)) / 2;
+            const points = [];
+
+            for (let i = 0; i <= turns * 100; i++) {
+                const t = i / 100;
+                const angle = 2 * Math.PI * t;
+                const radius = Math.pow(goldenRatio, t / Math.PI) * 2;
+                const x = radius * Math.cos(angle);
+                const y = radius * Math.sin(angle);
+                const z = t * 1;
+                points.push(new THREE.Vector3(x, y, z));
+            }
+
+            for (let i = 0; i < points.length - 1; i++) {
+                const lineCurve = new THREE.LineCurve3(points[i], points[i + 1]);
+                curve.add(lineCurve);
+            }
+
+            const geometry = new THREE.TubeGeometry(curve, Math.ceil(turns * 200), 0.2, 8, false);
+            
+            // Change color based on turns
+            const hue = (turns / maxTurns) * 360;
+            const color = new THREE.Color(`hsl(${hue}, 100%, 50%)`);
+            
+            const material = new THREE.MeshPhongMaterial({ 
+                color: color,
+                emissive: color,
+                emissiveIntensity: 0.2,
+                shininess: 100
+            });
+
+            return new THREE.Mesh(geometry, material);
+        }
+
+        // Add lighting
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 1, 100);
+        pointLight.position.set(10, 10, 10);
+        scene.add(pointLight);
+
+        // Position camera
+        camera.position.set(0, 0, 60);
+        camera.lookAt(0, 0, 0);
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Grow the spiral
+            if (turns < maxTurns) {
+                turns += growthRate;
+                if (spiral) {
+                    scene.remove(spiral);
+                }
+                spiral = createFibonacciSpiral(turns);
+                scene.add(spiral);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resizing
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>
